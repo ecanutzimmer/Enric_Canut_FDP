@@ -1,0 +1,151 @@
+---
+title: "post_sim_analysis"
+output: html_document
+---
+
+```{r}
+setwd("/home/enric/Escritorio/samples_single_end_map_chrm1_with_grouping_of_repeats/")
+```
+
+
+# libraries
+
+```{r}
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(stringr)
+library(Biostrings)
+library(corrplot)
+library(ggplot2)
+library(ggpubr)
+library(gghighlight)
+library(patchwork) 
+library(cowplot)
+
+```
+
+# load samples dataframes and geuvadis dataframe
+
+```{r}
+fcounts_files <- list.files(".", pattern=".txt$", full.names = T, recursive = T) %>%                                                        
+   purrr::set_names(~basename(.x) %>% gsub(".txt", "", .)) %>%                                                                      
+   purrr::imap(~read.table(.x, header=T) %>%                                                                                    
+                 dplyr::arrange(Chr, Start, End) %>%                                                                                        
+                 dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>%                                                         
+                 magrittr::set_colnames(c("Geneid", "Counts")))
+
+```
+
+```{r}
+fcounts_table <- fcounts_files %>%                                                                                     
+                  purrr::imap(~dplyr::group_by(.x, Geneid) %>%                                                             
+                                dplyr::summarise(Counts=sum(Counts)) %>%                                                                 
+                                dplyr::ungroup() %>%                                                                                      
+                                magrittr::set_colnames(c("Geneid", .y))) %>%                                                    
+                  plyr::join_all()
+
+head(fcounts_table)
+
+cor(fcounts_table[2:8])  # --> 0.26 
+#saveRDS(fcounts_table, file="fcounts_table.Rda")
+```
+
+# select families that where set to be overexpressed
+
+```{r}
+# I duplicate the same fcounts_table object but with a simpler name 
+
+cdf <- fcounts_table
+
+# lists with overexpressed transcripts for each sample (at the moment just 10) 
+
+s1_overxpr <- log(c(cdf$sample_01[772]+1, cdf$sample_01[83]+1, cdf$sample_01[320]+1, cdf$sample_01[8]+1, cdf$sample_01[968]+1, cdf$sample_01[996]+1, cdf$sample_01[939]+1, cdf$sample_01[24]+1, cdf$sample_01[231]+1, cdf$sample_01[979]+1, cdf$sample_01[13]+1, cdf$sample_01[414]+1, cdf$sample_01[419]+1, cdf$sample_01[481]+1, cdf$sample_01[228]+1, cdf$sample_01[538]+1, cdf$sample_01[1102]+1, cdf$sample_01[772]+1, cdf$sample_01[312]+1, cdf$sample_01[973]+1))
+
+s2_overxpr <- log(c(cdf$sample_02[772]+1, cdf$sample_02[83]+1, cdf$sample_02[320]+1, cdf$sample_02[8]+1, cdf$sample_02[968]+1, cdf$sample_02[996]+1, cdf$sample_02[939]+1, cdf$sample_02[24]+1, cdf$sample_02[231]+1, cdf$sample_02[979]+1, cdf$sample_02[13]+1, cdf$sample_02[414]+1, cdf$sample_02[419]+1, cdf$sample_02[481]+1, cdf$sample_02[228]+1, cdf$sample_02[538]+1, cdf$sample_02[1102]+1, cdf$sample_02[772]+1, cdf$sample_02[312]+1, cdf$sample_02[973]+1))
+
+s3_overxpr <- log(c(cdf$sample_03[772]+1, cdf$sample_03[83]+1, cdf$sample_03[320]+1, cdf$sample_03[8]+1, cdf$sample_03[968]+1, cdf$sample_03[996]+1, cdf$sample_03[939]+1, cdf$sample_03[24]+1, cdf$sample_03[231]+1, cdf$sample_03[979]+1, cdf$sample_03[13]+1, cdf$sample_03[414]+1, cdf$sample_03[419]+1, cdf$sample_03[481]+1, cdf$sample_03[228]+1, cdf$sample_03[538]+1, cdf$sample_03[1102]+1, cdf$sample_03[772]+1, cdf$sample_03[312]+1, cdf$sample_03[973]+1))
+
+s4_overxpr <- (log(c(cdf$sample_04[772]+1, cdf$sample_04[83]+1, cdf$sample_04[320]+1, cdf$sample_04[8]+1, cdf$sample_04[968]+1, cdf$sample_04[996]+1, cdf$sample_04[939]+1, cdf$sample_04[24]+1, cdf$sample_04[231]+1, cdf$sample_04[979]+1, cdf$sample_04[13]+1, cdf$sample_04[414]+1, cdf$sample_04[419]+1, cdf$sample_04[481]+1, cdf$sample_04[228]+1, cdf$sample_04[538]+1, cdf$sample_04[1102]+1, cdf$sample_04[772]+1, cdf$sample_04[312]+1, cdf$sample_04[973]+1)))
+  
+s5_overxpr <- log(c(cdf$sample_05[772]+1, cdf$sample_05[83]+1, cdf$sample_05[320]+1, cdf$sample_05[8]+1, cdf$sample_05[968]+1, cdf$sample_05[996]+1, cdf$sample_05[939]+1, cdf$sample_05[24]+1, cdf$sample_05[231]+1, cdf$sample_05[979]+1, cdf$sample_05[13]+1, cdf$sample_05[414]+1, cdf$sample_05[419]+1, cdf$sample_05[481]+1, cdf$sample_05[228]+1, cdf$sample_05[538]+1, cdf$sample_05[1102]+1, cdf$sample_05[772]+1, cdf$sample_05[312]+1, cdf$sample_05[973]+1))
+  
+s6_overxpr <- log(c(cdf$sample_06[772]+1, cdf$sample_06[83]+1, cdf$sample_06[320]+1, cdf$sample_06[8]+1, cdf$sample_06[968]+1, cdf$sample_06[996]+1, cdf$sample_06[939]+1, cdf$sample_06[24]+1, cdf$sample_06[231]+1, cdf$sample_06[979]+1, cdf$sample_06[13]+1, cdf$sample_06[414]+1, cdf$sample_06[419]+1, cdf$sample_06[481]+1, cdf$sample_06[228]+1, cdf$sample_06[538]+1, cdf$sample_06[1102]+1, cdf$sample_06[772]+1, cdf$sample_06[312]+1, cdf$sample_06[973]+1))
+  
+geuv_overxpr <- log(c(cdf$featureCounts_geuv[772]+1, cdf$featureCounts_geuv[83]+1, cdf$featureCounts_geuv[320]+1, cdf$featureCounts_geuv[8]+1, cdf$featureCounts_geuv[968]+1, cdf$featureCounts_geuv[996]+1, cdf$featureCounts_geuv[939]+1, cdf$featureCounts_geuv[24]+1, cdf$featureCounts_geuv[231]+1, cdf$featureCounts_geuv[979]+1, cdf$featureCounts_geuv[13]+1, cdf$featureCounts_geuv[414]+1, cdf$featureCounts_geuv[419]+1, cdf$featureCounts_geuv[481]+1, cdf$featureCounts_geuv[228]+1, cdf$featureCounts_geuv[538]+1, cdf$featureCounts_geuv[1102]+1, cdf$featureCounts_geuv[772]+1, cdf$featureCounts_geuv[312]+1, cdf$featureCounts_geuv[973]+1))
+
+
+# bind all lists into a dataframe
+
+overxprs_df <- as.data.frame(cbind(s1_overxpr, s2_overxpr, s3_overxpr, s4_overxpr, s5_overxpr, s6_overxpr, geuv_overxpr))
+head(overxprs_df)
+
+overxprs_df_g1 <- as.data.frame(overxprs_df[1:10,])
+overxprs_df_g2 <- as.data.frame(overxprs_df[11:20,])
+
+#MER20DNA/hAT-Charlie 772
+#Charlie18aDNA/hAT-Charlie 83
+#L1MB2LINE/L1 320
+#AluJbSINE/Alu 8
+#MIRbSINE/MIR 968
+#MLT1ILTR/ERVL-MaLR 996
+#MER8DNA/TcMar-Tigger 939
+#AluSx1SINE/Alu 24
+#HERV4_ILTR/ERV1 231
+#MLT1DLTR/ERVL-MaLR 979
+
+#AluSc8SINE/Alu 13
+#L2cLINE/L2 414
+#L3LINE/CR1 419
+#LTR17LTR/ERV1 481
+#HERV17-intLTR/ERV1 228
+#LTR2BLTR/ERV1 538
+#Tigger3aDNA/TcMar-Tigger 1102
+#MER20DNA/hAT-Charlie 772
+#L1MA4LINE/L1 312
+#MLT1A0LTR/ERVL-MaLR 973
+```
+
+```{r}
+
+# fix correlation --> ~0.26
+
+# FIGURE 1
+
+# add correlation numbers to each plot together with overexpressed repeats
+
+plot1 <- ggplot(fcounts_table, aes(log(sample_01 +1), log(featureCounts_geuv+1))) + geom_point() + xlab("sample1") + ylab("geuvadis") + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s1_overxpr, geuv_overxpr), colour="red", size=2) + geom_point(data = overxprs_df_g2, aes(s1_overxpr, geuv_overxpr), colour="blue", size=2) + annotate("text", x = 0.5, y = 12, label = "italic(R) == 0.264", size = 3, parse = TRUE) 
+plot1
+
+plot2 <- ggplot(fcounts_table, aes(log(sample_02 +1), log(featureCounts_geuv+1))) + geom_point() + stat_cor(aes(label = ..r.label..), method="pearson", r.accuracy = 0.001)  + xlab("sample2") + ylab("geuvadis") + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s2_overxpr, geuv_overxpr), colour="red", size=2) + geom_point(data = overxprs_df_g2, aes(s2_overxpr, geuv_overxpr), colour="blue", size=2)
+
+plot3 <- ggplot(fcounts_table, aes(log(sample_03 +1), log(featureCounts_geuv+1))) + geom_point() + stat_cor(aes(label = ..r.label..), method="pearson", r.accuracy = 0.001)  + xlab("sample3") + ylab("geuvadis") + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s3_overxpr, geuv_overxpr), colour="red", size=2) + geom_point(data = overxprs_df_g2, aes(s3_overxpr, geuv_overxpr), colour="blue", size=2)
+
+plot4 <- ggplot(fcounts_table, aes(log(sample_04 +1), log(featureCounts_geuv+1))) + geom_point() + annotate("text", x = 0.5, y = 12, label = "italic(R) == 0.269", size = 3, parse = TRUE) + xlab("sample4") + ylab("geuvadis") + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s4_overxpr, geuv_overxpr), colour="red", size=2) + geom_point(data = overxprs_df_g2, aes(s4_overxpr, geuv_overxpr), colour="blue", size=2)
+
+plot5 <- ggplot(fcounts_table, aes(log(sample_05 +1), log(featureCounts_geuv+1))) + geom_point() + stat_cor(aes(label = ..r.label..), method="pearson", r.accuracy = 0.001)  + xlab("sample5") + ylab("geuvadis") + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s5_overxpr, geuv_overxpr), colour="red", size=2) + geom_point(data = overxprs_df_g2, aes(s5_overxpr, geuv_overxpr), colour="blue", size=2)
+
+plot6 <- ggplot(fcounts_table, aes(log(sample_06 +1), log(featureCounts_geuv+1))) + geom_point() + stat_cor(aes(label = ..r.label..), method="pearson", r.accuracy = 0.001)  + xlab("sample6") + ylab("geuvadis") + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s6_overxpr, geuv_overxpr), colour="red", size=2) + geom_point(data = overxprs_df_g2, aes(s6_overxpr, geuv_overxpr), colour="blue", size=2)
+
+plot7 <- ggplot(fcounts_table, aes(log(sample_01 +1), log(sample_04 +1))) + geom_point() +xlab("sample1") + ylab("sample4") + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s1_overxpr, s4_overxpr), colour="red", size=2) + geom_point(data = overxprs_df_g2, aes(s1_overxpr, s4_overxpr), colour = "blue", size = 2) + annotate("text", x = 0.5, y = 12, label = "italic(R) == 0.996", size = 3, parse = TRUE) 
+plot7
+
+plot_grid(plot1, plot7, plot7, nrow = 2, labels = c("A", "B", "C"))
+
+ggdraw() +
+  draw_plot(plot1, x = 0, y = 0.5, width = 0.5, height = 0.5) +
+  draw_plot(plot4, x = 0.5, y = 0.5, width = 0.5, height = 0.5) +
+  draw_plot(plot7, x = 0, y = 0, width = 1, height = 0.5) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15, x = c(0,0.5,0), y = c(1, 1,0.5))   
+
+png("correlation_plot_map_chrm1_with_gp.png")
+
+gg_all <- (plot1 + plot4) / (plot7) + plot_annotation(title = "title") 
+
+print(gg_all)
+
+dev.off()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
