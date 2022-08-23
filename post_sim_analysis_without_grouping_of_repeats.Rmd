@@ -1,0 +1,128 @@
+---
+title: "analysis3"
+output: html_document
+---
+
+```{r}
+setwd("/home/enric/Escritorio/samples_paired_end_map_all_chrms_with_and_without_grouping_of_repeats/")
+```
+
+
+# libraries
+
+```{r}
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(stringr)
+library(Biostrings)
+library(corrplot)
+library(ggplot2)
+library(ggpubr)
+library(gghighlight)
+library(patchwork) 
+```
+
+```{r}
+
+#change files to the appropiate ones (the ones after simulation of paired-end for hole chrmosomes)
+
+# una vez terminada la simulación, coger los fastas i mapear con hisat2 i despues usar featurecounts para obtener los .txt
+
+s1_df <- read.table(file="sample_01.txt", header = T) %>% dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>% group_by(Geneid) %>% mutate(Geneid=paste(Geneid, row_number(), sep = "_dup")) %>% ungroup() %>% column_to_rownames("Geneid")
+
+s2_df <- read.table(file="sample_02.txt", header = T) %>% dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>% group_by(Geneid) %>% mutate(Geneid=paste(Geneid, row_number(), sep = "_dup")) %>% ungroup() %>% column_to_rownames("Geneid")
+
+s3_df <- read.table(file="sample_03.txt", header = T) %>% dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>% group_by(Geneid) %>% mutate(Geneid=paste(Geneid, row_number(), sep = "_dup")) %>% ungroup() %>% column_to_rownames("Geneid")
+
+s4_df <- read.table(file="sample_04.txt", header = T) %>% dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>% group_by(Geneid) %>% mutate(Geneid=paste(Geneid, row_number(), sep = "_dup")) %>% ungroup() %>% column_to_rownames("Geneid")
+
+s5_df <- read.table(file="sample_05.txt", header = T) %>% dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>% group_by(Geneid) %>% mutate(Geneid=paste(Geneid, row_number(), sep = "_dup")) %>% ungroup() %>% column_to_rownames("Geneid")
+
+s6_df <- read.table(file="sample_06.txt", header = T) %>% dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>% group_by(Geneid) %>% mutate(Geneid=paste(Geneid, row_number(), sep = "_dup")) %>% ungroup() %>% column_to_rownames("Geneid")
+
+geuv_df <- read.table(file = "hole_chrms.txt", header=T) %>% dplyr::select(-Chr, -Start, -End, -Length, -Strand) %>% group_by(Geneid) %>% mutate(Geneid=paste(Geneid, row_number(), sep = "_dup")) %>% ungroup() %>% column_to_rownames("Geneid")
+
+fcounts_table <- as.data.frame(cbind(geuv_df, s1_df[,1], s2_df[,1], s3_df[,1], s4_df[,1], s5_df[,1], s6_df[,1]))
+names(fcounts_table) <- c("geuv", "sample_01", "sample_02", "sample_03", "sample_04", "sample_05", "sample_06")
+head(fcounts_table)
+
+
+# order dataframe
+
+rownames_df <-  cbind(row.names(fcounts_table),fcounts_table)
+sorted_rownames <- rownames_df[order(rownames_df[,1]),]
+names(sorted_rownames)[1] <- 'rownames' 
+fcounts_table <- sorted_rownames %>% dplyr::select(-rownames)
+head(fcounts_table)
+cor(fcounts_table[1:7]) # ---> 0.01
+
+```
+
+
+```{r}
+# overexpressed transcripts (this time must check for individual copies!! (the numbers in brackets are not the ones overexpressed (must be changed!!!!))
+
+s1_overxpr <- log(c(fcounts_table$sample_01[232554]+1, fcounts_table$sample_01[101887]+1, fcounts_table$sample_01[141240]+1, fcounts_table$sample_01[26663]+1, fcounts_table$sample_01[281576]+1, fcounts_table$sample_01[313119]+1, fcounts_table$sample_01[249649]+1, fcounts_table$sample_01[49727]+1, fcounts_table$sample_01[119113]+1, fcounts_table$sample_01[309333]+1, fcounts_table$sample_01[32309]+1, fcounts_table$sample_01[195667]+1, fcounts_table$sample_01[210913]+1, fcounts_table$sample_01[215423]+1, fcounts_table$sample_01[119083]+1, fcounts_table$sample_01[216236]+1, fcounts_table$sample_01[330301]+1, fcounts_table$sample_01[232141]+1, fcounts_table$sample_01[138814]+1, fcounts_table$sample_01[305226]+1))
+
+s2_overxpr <- log(c(fcounts_table$sample_02[232554]+1, fcounts_table$sample_02[101887]+1, fcounts_table$sample_02[141240]+1, fcounts_table$sample_02[26663]+1, fcounts_table$sample_02[281576]+1, fcounts_table$sample_02[313119]+1, fcounts_table$sample_02[249649]+1, fcounts_table$sample_02[49727]+1, fcounts_table$sample_02[119113]+1, fcounts_table$sample_02[309333]+1, fcounts_table$sample_02[32309]+1, fcounts_table$sample_02[195667]+1, fcounts_table$sample_02[210913]+1, fcounts_table$sample_02[215423]+1, fcounts_table$sample_02[119083]+1, fcounts_table$sample_02[216236]+1, fcounts_table$sample_02[330301]+1, fcounts_table$sample_02[232141]+1, fcounts_table$sample_02[138814]+1, fcounts_table$sample_02[305226]+1))
+
+s3_overxpr <- log(c(fcounts_table$sample_03[232554]+1, fcounts_table$sample_03[101887]+1, fcounts_table$sample_03[141240]+1, fcounts_table$sample_03[26663]+1, fcounts_table$sample_03[281576]+1, fcounts_table$sample_03[313119]+1, fcounts_table$sample_03[249649]+1, fcounts_table$sample_03[49727]+1, fcounts_table$sample_03[119113]+1, fcounts_table$sample_03[309333]+1, fcounts_table$sample_03[32309]+1, fcounts_table$sample_03[195667]+1, fcounts_table$sample_03[210913]+1, fcounts_table$sample_03[215423]+1, fcounts_table$sample_03[119083]+1, fcounts_table$sample_03[216236]+1, fcounts_table$sample_03[330301]+1, fcounts_table$sample_03[232141]+1, fcounts_table$sample_03[138814]+1, fcounts_table$sample_03[305226]+1))
+
+s4_overxpr <- log(c(fcounts_table$sample_04[232554]+1, fcounts_table$sample_04[101887]+1, fcounts_table$sample_04[141240]+1, fcounts_table$sample_04[26663]+1, fcounts_table$sample_04[281576]+1, fcounts_table$sample_04[313119]+1, fcounts_table$sample_04[249649]+1, fcounts_table$sample_04[49727]+1, fcounts_table$sample_04[119113]+1, fcounts_table$sample_04[309333]+1, fcounts_table$sample_04[32309]+1, fcounts_table$sample_04[195667]+1, fcounts_table$sample_04[210913]+1, fcounts_table$sample_04[215423]+1, fcounts_table$sample_04[119083]+1, fcounts_table$sample_04[216236]+1, fcounts_table$sample_04[330301]+1, fcounts_table$sample_04[232141]+1, fcounts_table$sample_04[138814]+1, fcounts_table$sample_04[305226]+1))
+  
+s5_overxpr <- log(c(fcounts_table$sample_05[232554]+1, fcounts_table$sample_05[101887]+1, fcounts_table$sample_05[141240]+1, fcounts_table$sample_05[26663]+1, fcounts_table$sample_05[281576]+1, fcounts_table$sample_05[313119]+1, fcounts_table$sample_05[249649]+1, fcounts_table$sample_05[49727]+1, fcounts_table$sample_05[119113]+1, fcounts_table$sample_05[309333]+1, fcounts_table$sample_05[32309]+1, fcounts_table$sample_05[195667]+1, fcounts_table$sample_05[210913]+1, fcounts_table$sample_05[215423]+1, fcounts_table$sample_05[119083]+1, fcounts_table$sample_05[216236]+1, fcounts_table$sample_05[330301]+1, fcounts_table$sample_05[232141]+1, fcounts_table$sample_05[138814]+1, fcounts_table$sample_05[305226]+1))
+  
+s6_overxpr <- log(c(fcounts_table$sample_06[232554]+1, fcounts_table$sample_06[101887]+1, fcounts_table$sample_06[141240]+1, fcounts_table$sample_06[26663]+1, fcounts_table$sample_06[281576]+1, fcounts_table$sample_06[313119]+1, fcounts_table$sample_06[249649]+1, fcounts_table$sample_06[49727]+1, fcounts_table$sample_06[119113]+1, fcounts_table$sample_06[309333]+1, fcounts_table$sample_06[32309]+1, fcounts_table$sample_06[195667]+1, fcounts_table$sample_06[210913]+1, fcounts_table$sample_06[215423]+1, fcounts_table$sample_06[119083]+1, fcounts_table$sample_06[216236]+1, fcounts_table$sample_06[330301]+1, fcounts_table$sample_06[232141]+1, fcounts_table$sample_06[138814]+1, fcounts_table$sample_06[305226]+1))
+  
+# 
+geuv_overxpr <- log(c(fcounts_table$geuv[232554]+1, fcounts_table$geuv[101887]+1, fcounts_table$geuv[141240]+1, fcounts_table$geuv[26663]+1, fcounts_table$geuv[281576]+1, fcounts_table$geuv[313119]+1, fcounts_table$geuv[249649]+1, fcounts_table$geuv[49727]+1, fcounts_table$geuv[119113]+1, fcounts_table$geuv[309333]+1, fcounts_table$geuv[32309]+1, fcounts_table$geuv[195667]+1, fcounts_table$geuv[210913]+1, fcounts_table$geuv[215423]+1, fcounts_table$geuv[119083]+1, fcounts_table$geuv[216236]+1, fcounts_table$geuv[330301]+1, fcounts_table$geuv[232141]+1, fcounts_table$geuv[138814]+1, fcounts_table$geuv[305226]+1))
+
+overexpresed_df <- as.data.frame(cbind(s1_overxpr, s2_overxpr, s3_overxpr, s4_overxpr, s5_overxpr, s6_overxpr, geuv_overxpr))
+overxprs_df_g1 <- as.data.frame(overexpresed_df[1:10,])
+overxprs_df_g2 <- as.data.frame(overexpresed_df[11:20,])
+```
+
+```{r}
+
+plot_s1g <- ggplot(data = fcounts_table, aes(log(sample_01+1), log(geuv+1))) + geom_point() + annotate("text", y = 12, label = "italic(R) == 0.011", size = 3, parse = TRUE, x = 2.5) + theme_minimal() + geom_point(data = overxprs_df_g1, aes(s1_overxpr, geuv_overxpr), colour="red") + geom_point(data = overxprs_df_g2, aes(s1_overxpr, geuv_overxpr), colour="blue") + xlab("sample1") + ylab("geuvadis")
+
+plot_s1g
+```
+
+```{r}
+load("sim_counts_matrix.rda")
+
+fcounts_table_polyester <- as.data.frame(counts_matrix)
+head(fcounts_table_polyester)
+nrow(fcounts_table_polyester)
+
+cor(fcounts_table_polyester[1:6])
+
+s1_overxpr_polyester <- log(c(fcounts_table_polyester$sample_01[232554]+1, fcounts_table_polyester$sample_01[101887]+1, fcounts_table_polyester$sample_01[141240]+1, fcounts_table_polyester$sample_01[26663]+1, fcounts_table_polyester$sample_01[281576]+1, fcounts_table_polyester$sample_01[313119]+1, fcounts_table_polyester$sample_01[249649]+1, fcounts_table_polyester$sample_01[49727]+1, fcounts_table_polyester$sample_01[119113]+1, fcounts_table_polyester$sample_01[309333]+1, fcounts_table_polyester$sample_01[32309]+1, fcounts_table_polyester$sample_01[195667]+1, fcounts_table_polyester$sample_01[210913]+1, fcounts_table_polyester$sample_01[215423]+1, fcounts_table_polyester$sample_01[119083]+1, fcounts_table_polyester$sample_01[216236]+1, fcounts_table_polyester$sample_01[330301]+1, fcounts_table_polyester$sample_01[232141]+1, fcounts_table_polyester$sample_01[138814]+1, fcounts_table_polyester$sample_01[305226]+1))
+
+s4_overxpr_polyester <- log(c(fcounts_table_polyester$sample_04[232554]+1, fcounts_table_polyester$sample_04[101887]+1, fcounts_table_polyester$sample_04[141240]+1, fcounts_table_polyester$sample_04[26663]+1, fcounts_table_polyester$sample_04[281576]+1, fcounts_table_polyester$sample_04[313119]+1, fcounts_table_polyester$sample_04[249649]+1, fcounts_table_polyester$sample_04[49727]+1, fcounts_table_polyester$sample_04[119113]+1, fcounts_table_polyester$sample_04[309333]+1, fcounts_table_polyester$sample_04[32309]+1, fcounts_table_polyester$sample_04[195667]+1, fcounts_table_polyester$sample_04[210913]+1, fcounts_table_polyester$sample_04[215423]+1, fcounts_table_polyester$sample_04[119083]+1, fcounts_table_polyester$sample_04[216236]+1, fcounts_table_polyester$sample_04[330301]+1, fcounts_table_polyester$sample_04[232141]+1, fcounts_table_polyester$sample_04[138814]+1, fcounts_table_polyester$sample_04[305226]+1))
+
+overexpresed_df_polyester <- as.data.frame(cbind(s1_overxpr_polyester, s4_overxpr_polyester))
+overxprs_df_g1_polyester <- as.data.frame(overexpresed_df_polyester[1:10,])
+overxprs_df_g2_polyester <- as.data.frame(overexpresed_df_polyester[11:20,])
+
+plot7 <- ggplot(fcounts_table_polyester, aes(log(sample_01 +1), log(sample_04 +1))) + geom_point() +xlab("sample1") + ylab("sample4") + theme_minimal() + geom_point(data = overxprs_df_g1_polyester, aes(s1_overxpr_polyester, s4_overxpr_polyester), colour="red", size=2) + geom_point(data = overxprs_df_g2_polyester, aes(s1_overxpr_polyester, s4_overxpr_polyester), colour = "blue", size = 2) + annotate("text", y = 12, label = "italic(R) == 0.971", size = 3, parse = TRUE, x = 2.5) 
+plot7
+
+```
+
+```{r}
+gg_all <- (plot_s1g + plot7) + plot_annotation(title = "title") 
+print(gg_all)
+
+
+ggdraw() +
+  draw_plot(plot_s1g, x = 0, y = 0.5, width = 0.5, height = 0.5) +
+  draw_plot(plot7, x = 0.5, y = 0.5, width = 0.5, height = 0.5) +
+  draw_plot_label(label = c("A", "B"), size = 15, x = c(0,0.5), y = c(1, 1))
+#better horizontal
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
